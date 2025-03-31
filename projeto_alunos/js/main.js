@@ -106,5 +106,58 @@ formAluno.addEventListener('submit', e => {
     e.target.reset();
 });
 
+// Funções de relatório
+const mostrarAprovados = () => {
+    const aprovados = alunos.filter(aluno => aluno.notaFinal >= 7);
+    const resultado = aprovados.map(aluno => `${aluno.nome} (${aluno.notaFinal})`).join('<br>');
+    document.getElementById('resultadoRelatorios').innerHTML =
+        `<h3>Alunos Aprovados (${aprovados.length})</h3>${resultado || 'Nenhum aluno aprovado'}`;
+};
+
+const calcularMediaNotas = () => {
+    const media = alunos.reduce((sum, aluno) => sum + aluno.notaFinal, 0) / alunos.length || 0;
+    document.getElementById('resultadoRelatorios').innerHTML =
+        `<h3>Média das Notas</h3>${media.toFixed(2)}`;
+};
+
+const calcularMediaIdades = () => {
+    const media = alunos.reduce((sum, aluno) => sum + aluno.idade, 0) / alunos.length || 0;
+    document.getElementById('resultadoRelatorios').innerHTML =
+        `<h3>Média das Idades</h3>${media.toFixed(1)} anos`;
+};
+
+const listarOrdemAlfabetica = () => {
+    const ordenados = [...alunos].sort((a, b) => a.nome.localeCompare(b.nome));
+    const resultado = ordenados.map(aluno => aluno.nome).join('<br>');
+    document.getElementById('resultadoRelatorios').innerHTML =
+        `<h3>Alunos em Ordem Alfabética</h3>${resultado || 'Nenhum aluno cadastrado'}`;
+};
+
+const mostrarAlunosPorCurso = () => {
+    const cursos = {};
+    alunos.forEach(aluno => {
+        cursos[aluno.curso] = (cursos[aluno.curso] || 0) + 1;
+    });
+
+    let resultado = '';
+    for (const [curso, quantidade] of Object.entries(cursos)) {
+        resultado += `${curso}: ${quantidade} aluno(s)<br>`;
+    }
+
+    document.getElementById('resultadoRelatorios').innerHTML =
+        `<h3>Alunos por Curso</h3>${resultado || 'Nenhum aluno cadastrado'}`;
+};
+
+// Event listeners para os relatórios
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btnAprovados').addEventListener('click', mostrarAprovados);
+    document.getElementById('btnMediaNotas').addEventListener('click', calcularMediaNotas);
+    document.getElementById('btnMediaIdades').addEventListener('click', calcularMediaIdades);
+    document.getElementById('btnOrdemAlfabetica').addEventListener('click', listarOrdemAlfabetica);
+    document.getElementById('btnAlunosPorCurso').addEventListener('click', mostrarAlunosPorCurso);
+
+    // Adicionar alunos de exemplo
+    adicionarAluno('João Silva', 20, 'Engenharia', 8.5);
+    adicionarAluno('Maria Souza', 22, 'Medicina', 9.2);
+    adicionarAluno('Carlos Oliveira', 19, 'Direito', 7.8);
 });
