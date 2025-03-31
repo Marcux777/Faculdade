@@ -1,108 +1,185 @@
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f5f5f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.8;
     margin: 0;
-    padding: 20px;
-    line-height: 1.6;
-    color: #333;
+    padding: 30px;
+    color: #2d3436;
+    background-color: #f7f9fc;
 }
 
-h1, h2 {
+h1 {
+    color: #3867d6;
     text-align: center;
-    color: #333;
+    margin-bottom: 30px;
+    font-weight: 600;
+    font-size: 2.5rem;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
 }
 
 #formAluno {
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 20px;
-    background: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    max-width: 650px;
+    margin: 30px auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease;
 }
 
-form {
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 20px;
-    background: #fff;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+#formAluno:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
 }
 
-#formAluno div, form div {
-    margin-bottom: 15px;
+#formAluno div {
+    margin-bottom: 22px;
 }
 
-label, form label {
+label {
     display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #555;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2d3436;
+    font-size: 0.95rem;
 }
 
 input[type="text"],
-input[type="number"], form input {
+input[type="number"] {
     width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 12px;
+    border: 1px solid #dfe6e9;
+    border-radius: 8px;
     box-sizing: border-box;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+    outline: none;
+    border-color: #3867d6;
+    box-shadow: 0 0 0 3px rgba(56, 103, 214, 0.15);
+    background-color: #fff;
 }
 
 button {
-    width: 100%;
-    padding: 10px;
-    background-color: #007BFF;
+    background-color: #3867d6;
+    color: white;
+    padding: 12px 20px;
     border: none;
-    border-radius: 3px;
-    color: #fff;
-    font-size: 16px;
+    border-radius: 8px;
     cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(56, 103, 214, 0.15);
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: #2854c3;
+    transform: translateY(-3px);
+    box-shadow: 0 7px 10px rgba(56, 103, 214, 0.2);
+}
+
+button:active {
+    transform: translateY(-1px);
 }
 
 #tabelaAlunos {
     width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 40px;
+    background-color: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
 }
 
 #tabelaAlunos th, #tabelaAlunos td {
-    border: 1px solid #ddd;
-    padding: 8px;
+    padding: 14px 16px;
     text-align: left;
+    border-bottom: 1px solid #ebedf0;
 }
 
 #tabelaAlunos th {
-    background-color: #3498db;
+    background-color: #3867d6;
     color: white;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    font-size: 0.95rem;
+}
+
+#tabelaAlunos th:first-child {
+    border-top-left-radius: 12px;
+}
+
+#tabelaAlunos th:last-child {
+    border-top-right-radius: 12px;
+}
+
+#tabelaAlunos tr:last-child td {
+    border-bottom: none;
 }
 
 #tabelaAlunos tr:nth-child(even) {
-    background-color: #f2f2f2;
+    background-color: #f8fafd;
 }
 
 #tabelaAlunos tr:hover {
-    background-color: #e6f7ff;
+    background-color: #f0f7ff;
+}
+
+/* Coluna de ações na tabela */
+.acoes-coluna {
+    min-width: 180px;
+    text-align: center;
 }
 
 .btn-editar {
-    background-color: #f39c12;
-    margin-right: 5px;
+    background-color: #20bf6b;
+    margin-right: 8px;
+    transition: all 0.3s ease;
+    padding: 8px 16px;
+    font-size: 0.9rem;
 }
 
 .btn-editar:hover {
-    background-color: #d35400;
+    background-color: #0fb55a;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(32, 191, 107, 0.3);
 }
 
 .btn-excluir {
-    background-color: #e74c3c;
+    background-color: #e84118;
+    transition: all 0.3s ease;
+    padding: 8px 16px;
+    font-size: 0.9rem;
 }
 
 .btn-excluir:hover {
-    background-color: #c0392b;
+    background-color: #c23616;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(232, 65, 24, 0.3);
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    body {
+        padding: 15px;
+    }
+
+    #formAluno {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    #tabelaAlunos th, #tabelaAlunos td {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
 }
