@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sessões Disponíveis - Sistema de Cinema</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .sessoes-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .btn-comprar {
+            background-color: #1abc9c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .btn-comprar:hover {
+            background-color: #16a085;
+        }
+
+        .no-sessoes {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Sistema de Gerenciamento de Cinema</h1>
+        </div>
+    </header>
+
+    <nav>
+        <div class="container">
+            <ul class="menu">
+                <li><a href="cadastro-filmes.html">Cadastro de Filmes</a></li>
+                <li><a href="cadastro-salas.html">Cadastro de Salas</a></li>
+                <li><a href="cadastro-sessoes.html">Cadastro de Sessões</a></li>
+                <li><a href="venda-ingressos.html">Venda de Ingressos</a></li>
+                <li><a href="sessoes.html">Listagem de Sessões Disponíveis</a></li>
+                <li><a href="index.html">Página Inicial</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <div class="container">
+            <section class="welcome-section">
+                <h2>Sessões Disponíveis</h2>
+                <p>Confira abaixo todas as sessões disponíveis para compra de ingressos.</p>
+            </section>
+
+            <div class="sessoes-container">
+                <div id="sessoes-lista">
+                    <table id="tabela-sessoes">
+                        <thead>
+                            <tr>
+                                <th>Filme</th>
+                                <th>Sala</th>
+                                <th>Data e Hora</th>
+                                <th>Preço</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessoes-body">
+                            <!-- As sessões serão carregadas dinamicamente via JavaScript -->
+                        </tbody>
+                    </table>
+                    <div id="no-sessoes" class="no-sessoes" style="display: none;">
+                        Não há sessões disponíveis no momento.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Sistema de Gerenciamento de Cinema</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Carregar as sessões do localStorage
+            carregarSessoes();
+        });
+
+        function carregarSessoes() {
+            const sessoes = JSON.parse(localStorage.getItem('sessoes')) || [];
+            const tabelaBody = document.getElementById('sessoes-body');
+            const noSessoes = document.getElementById('no-sessoes');
+
+            // Limpar tabela
+            tabelaBody.innerHTML = '';
+
+            if (sessoes.length === 0) {
+                // Mostrar mensagem quando não há sessões
+                noSessoes.style.display = 'block';
+                document.getElementById('tabela-sessoes').style.display = 'none';
+            } else {
+                // Ocultar mensagem e mostrar tabela
+                noSessoes.style.display = 'none';
+                document.getElementById('tabela-sessoes').style.display = 'table';
+
+                // Adicionar sessões à tabela
+                sessoes.forEach((sessao, index) => {
+                    const row = document.createElement('tr');
+
+                    // Converter string de data para objeto Date
+                    const dataHora = new Date(sessao.dataHora);
+
+                    // Formatar data e hora para exibição
+                    const dataFormatada = dataHora.toLocaleDateString('pt-BR');
+                    const horaFormatada = dataHora.toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    // Formatar preço para exibição
+                    const precoFormatado = `R$ ${parseFloat(sessao.preco).toFixed(2).replace('.', ',')}`;
+
+                    row.innerHTML = `
+                        <td>${sessao.filme}</td>
+                        <td>${sessao.sala}</td>
+                        <td>${dataFormatada} às ${horaFormatada}</td>
+                        <td>${precoFormatado}</td>
+                        <td>
+                            <button class="btn-comprar" onclick="comprarIngresso(${index})">
+                                Comprar Ingresso
+                            </button>
+                        </td>
+                    `;
+
+                    tabelaBody.appendChild(row);
+                });
+            }
+        }
+
+        function comprarIngresso(sessaoIndex) {
+            // Redirecionar para a página de venda de ingressos com o índice da sessão
+            window.location.href = `venda-ingressos.html?sessao=${sessaoIndex}`;
+        }
+    </script>
+</body>
+</html>

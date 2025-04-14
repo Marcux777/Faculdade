@@ -14,18 +14,18 @@
             border-radius: 8px;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
-        
+
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
             color: #2c3e50;
         }
-        
+
         input, select {
             width: 100%;
             padding: 10px;
@@ -33,7 +33,7 @@
             border-radius: 4px;
             font-size: 16px;
         }
-        
+
         .submit-btn {
             background-color: #1abc9c;
             color: #fff;
@@ -46,24 +46,24 @@
             width: 100%;
             transition: background-color 0.3s;
         }
-        
+
         .submit-btn:hover {
             background-color: #16a085;
         }
-        
+
         .alert {
             padding: 15px;
             margin-bottom: 20px;
             border-radius: 4px;
             display: none;
         }
-        
+
         .alert-success {
             background-color: #dff0d8;
             color: #3c763d;
             border: 1px solid #d6e9c6;
         }
-        
+
         .alert-danger {
             background-color: #f2dede;
             color: #a94442;
@@ -156,17 +156,20 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Carregar as sessões do localStorage
             carregarSessoes();
-            
+
+            // Verificar se há uma sessão na URL e pré-selecioná-la
+            verificarSessaoURL();
+
             // Configurar o formulário
             const form = document.getElementById('vendaForm');
             form.addEventListener('submit', registrarVenda);
-            
+
             // Formatar CPF enquanto digita
             const cpfInput = document.getElementById('cpf');
             cpfInput.addEventListener('input', function(e) {
                 let value = e.target.value.replace(/\D/g, '');
                 if (value.length > 11) value = value.slice(0, 11);
-                
+
                 if (value.length > 9) {
                     value = value.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4");
                 } else if (value.length > 6) {
@@ -174,23 +177,37 @@
                 } else if (value.length > 3) {
                     value = value.replace(/^(\d{3})(\d{3})$/, "$1.$2");
                 }
-                
+
                 e.target.value = value;
             });
         });
-        
+
+        function verificarSessaoURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessaoIndex = urlParams.get('sessao');
+
+            if (sessaoIndex !== null) {
+                const sessaoSelect = document.getElementById('sessao');
+
+                // Verificar se o elemento select e a opção existem
+                if (sessaoSelect && sessaoSelect.options.length > Number(sessaoIndex) + 1) {
+                    sessaoSelect.value = sessaoIndex;
+                }
+            }
+        }
+
         function carregarSessoes() {
             const sessaoSelect = document.getElementById('sessao');
             const sessoes = JSON.parse(localStorage.getItem('sessoes')) || [];
-            
+
             // Limpar opções existentes
             sessaoSelect.innerHTML = '<option value="">Selecione uma sessão</option>';
-            
+
             // Adicionar sessões como opções
             sessoes.forEach((sessao, index) => {
                 const option = document.createElement('option');
                 option.value = index;
-                
+
                 // Criar descrição da sessão (filme, sala, data e hora)
                 const dataHora = new Date(sessao.dataHora);
                 const dataFormatada = dataHora.toLocaleDateString('pt-BR');
@@ -198,38 +215,38 @@
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-                
+
                 option.textContent = `${sessao.filme} - Sala ${sessao.sala} - ${dataFormatada} às ${horaFormatada}`;
-                
+
                 sessaoSelect.appendChild(option);
             });
         }
-        
+
         function registrarVenda(event) {
             event.preventDefault();
-            
+
             // Obter valores do formulário
             const sessaoIndex = document.getElementById('sessao').value;
             const nome = document.getElementById('nome').value.trim();
             const cpf = document.getElementById('cpf').value.trim();
             const assento = document.getElementById('assento').value.trim();
             const pagamento = document.getElementById('pagamento').value;
-            
+
             // Validar campos
             if (!sessaoIndex || !nome || !cpf || !assento || !pagamento) {
                 mostrarAlerta('error');
                 return;
             }
-            
+
             // Obter sessões do localStorage
             const sessoes = JSON.parse(localStorage.getItem('sessoes')) || [];
             const sessao = sessoes[sessaoIndex];
-            
+
             if (!sessao) {
                 mostrarAlerta('error');
                 return;
             }
-            
+
             // Criar objeto de ingresso
             const ingresso = {
                 id: Date.now(),
@@ -245,32 +262,32 @@
                 pagamento,
                 dataVenda: new Date().toISOString()
             };
-            
+
             // Salvar no localStorage
             const ingressos = JSON.parse(localStorage.getItem('ingressos')) || [];
             ingressos.push(ingresso);
             localStorage.setItem('ingressos', JSON.stringify(ingressos));
-            
+
             // Mostrar mensagem de sucesso e limpar formulário
             mostrarAlerta('success');
             document.getElementById('vendaForm').reset();
         }
-        
+
         function mostrarAlerta(tipo) {
             const alertSuccess = document.getElementById('alertSuccess');
             const alertError = document.getElementById('alertError');
-            
+
             if (tipo === 'success') {
                 alertSuccess.style.display = 'block';
                 alertError.style.display = 'none';
-                
+
                 setTimeout(() => {
                     alertSuccess.style.display = 'none';
                 }, 3000);
             } else {
                 alertError.style.display = 'block';
                 alertSuccess.style.display = 'none';
-                
+
                 setTimeout(() => {
                     alertError.style.display = 'none';
                 }, 3000);
