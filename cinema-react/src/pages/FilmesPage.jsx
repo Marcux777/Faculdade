@@ -3,7 +3,7 @@ import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
 import Toast from '../components/common/Toast';
-import { filmeService } from '../services/api';
+import { filmeService } from '../services/filmeService';
 import useApi from '../hooks/useApi';
 
 const FilmesPage = () => {
@@ -32,10 +32,11 @@ const FilmesPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await createItem(formData);
-    
+    const action = formData.id ? updateItem : createItem;
+    const result = formData.id ? await action(formData.id, formData) : await action(formData);
+
     if (result.success) {
-      setToast({ message: 'Filme criado com sucesso!', type: 'success' });
+      setToast({ message: `Filme ${formData.id ? 'atualizado' : 'criado'} com sucesso!`, type: 'success' });
       setModalOpen(false);
       setFormData({ titulo: '', duracao: '', classificacao: '', genero: '' });
     } else {
@@ -96,16 +97,16 @@ const FilmesPage = () => {
                 <td>{filme.classificacao}</td>
                 <td>{filme.genero}</td>
                 <td>
-                  <Button 
-                    variant="warning" 
-                    size="sm" 
+                  <Button
+                    variant="warning"
+                    size="sm"
                     className="me-2"
                     onClick={() => handleEdit(filme)}
                   >
                     <i className="bi bi-pencil"></i>
                   </Button>
-                  <Button 
-                    variant="danger" 
+                  <Button
+                    variant="danger"
                     size="sm"
                     onClick={() => handleDelete(filme.id)}
                   >
@@ -135,8 +136,8 @@ const FilmesPage = () => {
         }}
         footer={
           <>
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               onClick={() => {
                 setModalOpen(false);
                 setFormData({ titulo: '', duracao: '', classificacao: '', genero: '' });

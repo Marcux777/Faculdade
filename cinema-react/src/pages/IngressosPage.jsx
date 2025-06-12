@@ -2,60 +2,84 @@ import { useState, useEffect } from 'react';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
-import { ingressoService, sessaoService } from '../services/api';
+import Toast from '../components/common/Toast';
+import { ingressoService } from '../services/ingressoService';
+import { sessaoService } from '../services/sessaoService';
+import useApi from '../hooks/useApi';
+import { format } from 'date-fns';
 
 const IngressosPage = () => {
-  const [ingressos, setIngressos] = useState([]);
-  const [sessoes, setSessoes] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
     sessaoId: '',
     quantidade: 1,
-    tipoIngresso: 'INTEIRA', // INTEIRA, MEIA
+    tipoIngresso: 'INTEIRA',
   });
 
-  useEffect(() => {
-    // Carregar sessões disponíveis
-    const carregarSessoes = async () => {
-      try {
-        const response = await sessaoService.listar();
-        setSessoes(response.data);
-      } catch (error) {
-        console.error('Erro ao carregar sessões:', error);
-      }
-    };
-    carregarSessoes();
-  }, []);
+  const {
+    data: ingressos,
+    loading,
+    error,
+    fetchData,
+    createItem,
+    updateItem,
+    deleteItem
+  } = useApi(ingressoService);
 
-  const calcularValorTotal = () => {
-    const sessao = sessoes.find(s => s.id === formData.sessaoId);
-    if (!sessao) return 0;
-    const valorBase = sessao.valorIngresso * formData.quantidade;
-    return formData.tipoIngresso === 'MEIA' ? valorBase / 2 : valorBase;
-  };
+  const { data: sessoes, fetchData: fetchSessoes } = useApi(sessaoService);
+
+  useEffect(() => {
+    fetchData();
+    fetchSessoes();
+  }, [fetchData, fetchSessoes]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const dadosIngresso = {
-        ...formData,
-        valorTotal: calcularValorTotal()
-      };
-      await ingressoService.criar(dadosIngresso);
-      const response = await ingressoService.listar();
-      setIngressos(response.data);
+    const action = formData.id ? updateItem : createItem;
+    const result = formData.id ? await action(formData.id, formData) : await action(formData);
+
+    if (result.success) {
+      setToast({ message: `Ingresso ${formData.id ? 'atualizado' : 'comprado'} com sucesso!`, type: 'success' });
       setModalOpen(false);
       setFormData({ sessaoId: '', quantidade: 1, tipoIngresso: 'INTEIRA' });
-    } catch (error) {
-      console.error('Erro ao salvar ingresso:', error);
+    } else {
+      setToast({ message: result.error || 'Erro ao salvar ingresso', type: 'error' });
     }
   };
 
+  const handleDelete = async (id) => {
+    if (window.confirm('Tem certeza que deseja cancelar este ingresso?')) {
+      const result = await deleteItem(id);
+      if (result.success) {
+        setToast({ message: 'Ingresso cancelado com sucesso!', type: 'success' });
+      } else {
+        setToast({ message: result.error || 'Erro ao cancelar ingresso', type: 'error' });
+      }
+    }
+  };
+
+  const handleEdit = (ingresso) => {
+    setFormData({
+      ...ingresso,
+      sessaoId: ingresso.sessao.id,
+    });
+    setModalOpen(true);
+  };
+
+  const openModal = () => {
+    setFormData({ sessaoId: '', quantidade: 1, tipoIngresso: 'INTEIRA' });
+    setModalOpen(true);
+  }
+
   return (
     <div className="container py-4">
+      {loading && <div className="alert alert-info">Carregando...</div>}
+      {error && <div className="alert alert-danger">{error}</div>}
+
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Ingressos</h1>
-        <Button onClick={() => setModalOpen(true)}>
+        <Button onClick={openModal}>
           <i className="bi bi-plus-lg me-2"></i>
           Novo Ingresso
         </Button>
@@ -75,21 +99,21 @@ const IngressosPage = () => {
             </tr>
           </thead>
           <tbody>
-            {ingressos.map((ingresso, index) => (
-              <tr key={index}>
+            {ingressos.map((ingresso) => (
+              <tr key={ingresso.id}>
                 <td>{ingresso.sessao?.filme?.titulo}</td>
-                <td>{ingresso.sessao?.sala?.numero}</td>
+                <td>Sala {ingresso.sessao?.sala?.numero}</td>
                 <td>
-                  {new Date(ingresso.sessao?.data).toLocaleDateString()} - {ingresso.sessao?.horario}
+                  {ingresso.sessao?.data ? format(new Date(ingresso.sessao.data), 'dd/MM/yyyy') : ''} - {ingresso.sessao?.horario}
                 </td>
                 <td>{ingresso.quantidade}</td>
                 <td>{ingresso.tipoIngresso}</td>
                 <td>R$ {Number(ingresso.valorTotal).toFixed(2)}</td>
                 <td>
-                  <Button variant="warning" size="sm" className="me-2">
+                  <Button variant="warning" size="sm" className="me-2" onClick={() => handleEdit(ingresso)}>
                     <i className="bi bi-pencil"></i>
                   </Button>
-                  <Button variant="danger" size="sm">
+                  <Button variant="danger" size="sm" onClick={() => handleDelete(ingresso.id)}>
                     <i className="bi bi-trash"></i>
                   </Button>
                 </td>
@@ -99,8 +123,10 @@ const IngressosPage = () => {
         </table>
       </div>
 
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       <Modal
-        title="Novo Ingresso"
+        title={formData.id ? 'Editar Ingresso' : 'Novo Ingresso'}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         footer={
@@ -109,7 +135,7 @@ const IngressosPage = () => {
               Cancelar
             </Button>
             <Button onClick={handleSubmit}>
-              Comprar Ingresso
+              {formData.id ? 'Atualizar' : 'Comprar Ingresso'}
             </Button>
           </>
         }
@@ -119,16 +145,18 @@ const IngressosPage = () => {
             <label htmlFor="sessaoId" className="form-label">Sessão</label>
             <select
               id="sessaoId"
+              name="sessaoId"
               className="form-select"
               value={formData.sessaoId}
               onChange={(e) => setFormData({ ...formData, sessaoId: e.target.value })}
               required
+              disabled={!!formData.id}
             >
               <option value="">Selecione uma sessão...</option>
               {sessoes.map(sessao => (
                 <option key={sessao.id} value={sessao.id}>
                   {sessao.filme?.titulo} - Sala {sessao.sala?.numero} -
-                  {new Date(sessao.data).toLocaleDateString()} - {sessao.horario}
+                  {sessao.data ? format(new Date(sessao.data), 'dd/MM/yyyy') : ''} - {sessao.horario}
                 </option>
               ))}
             </select>
@@ -137,10 +165,11 @@ const IngressosPage = () => {
           <Input
             label="Quantidade"
             id="quantidade"
+            name="quantidade"
             type="number"
             min="1"
             value={formData.quantidade}
-            onChange={(e) => setFormData({ ...formData, quantidade: parseInt(e.target.value) })}
+            onChange={(e) => setFormData({ ...formData, quantidade: parseInt(e.target.value) || 1 })}
             required
           />
 
@@ -148,6 +177,7 @@ const IngressosPage = () => {
             <label htmlFor="tipoIngresso" className="form-label">Tipo de Ingresso</label>
             <select
               id="tipoIngresso"
+              name="tipoIngresso"
               className="form-select"
               value={formData.tipoIngresso}
               onChange={(e) => setFormData({ ...formData, tipoIngresso: e.target.value })}
@@ -157,12 +187,6 @@ const IngressosPage = () => {
               <option value="MEIA">Meia-Entrada</option>
             </select>
           </div>
-
-          {formData.sessaoId && (
-            <div className="alert alert-info">
-              <strong>Valor Total:</strong> R$ {calcularValorTotal().toFixed(2)}
-            </div>
-          )}
         </form>
       </Modal>
     </div>

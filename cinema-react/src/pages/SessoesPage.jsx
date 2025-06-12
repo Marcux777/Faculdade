@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
-import { sessaoService, filmeService, salaService } from '../services/api';
+import Toast from '../components/common/Toast';
+import { sessaoService } from '../services/sessaoService';
+import { filmeService } from '../services/filmeService';
+import { salaService } from '../services/salaService';
+import useApi from '../hooks/useApi';
+import { format } from 'date-fns';
 
 const SessoesPage = () => {
-  const [sessoes, setSessoes] = useState([]);
-  const [filmes, setFilmes] = useState([]);
-  const [salas, setSalas] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
     filmeId: '',
     salaId: '',
@@ -17,41 +20,73 @@ const SessoesPage = () => {
     valorIngresso: ''
   });
 
+  const {
+    data: sessoes,
+    loading,
+    error,
+    fetchData,
+    createItem,
+    updateItem,
+    deleteItem
+  } = useApi(sessaoService);
+
+  const { data: filmes, fetchData: fetchFilmes } = useApi(filmeService);
+  const { data: salas, fetchData: fetchSalas } = useApi(salaService);
+
   useEffect(() => {
-    // Carregar filmes e salas para o formulário
-    const carregarDados = async () => {
-      try {
-        const [filmesRes, salasRes] = await Promise.all([
-          filmeService.listar(),
-          salaService.listar()
-        ]);
-        setFilmes(filmesRes.data);
-        setSalas(salasRes.data);
-      } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-      }
-    };
-    carregarDados();
-  }, []);
+    fetchData();
+    fetchFilmes();
+    fetchSalas();
+  }, [fetchData, fetchFilmes, fetchSalas]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      await sessaoService.criar(formData);
-      const response = await sessaoService.listar();
-      setSessoes(response.data);
+    const action = formData.id ? updateItem : createItem;
+    const result = formData.id ? await action(formData.id, formData) : await action(formData);
+
+    if (result.success) {
+      setToast({ message: `Sessão ${formData.id ? 'atualizada' : 'criada'} com sucesso!`, type: 'success' });
       setModalOpen(false);
       setFormData({ filmeId: '', salaId: '', data: '', horario: '', valorIngresso: '' });
-    } catch (error) {
-      console.error('Erro ao salvar sessão:', error);
+    } else {
+      setToast({ message: result.error || 'Erro ao salvar sessão', type: 'error' });
     }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Tem certeza que deseja excluir esta sessão?')) {
+      const result = await deleteItem(id);
+      if (result.success) {
+        setToast({ message: 'Sessão excluída com sucesso!', type: 'success' });
+      } else {
+        setToast({ message: result.error || 'Erro ao excluir sessão', type: 'error' });
+      }
+    }
+  };
+
+  const handleEdit = (sessao) => {
+    setFormData({
+      ...sessao,
+      filmeId: sessao.filme.id,
+      salaId: sessao.sala.id,
+      data: format(new Date(sessao.data), 'yyyy-MM-dd')
+    });
+    setModalOpen(true);
+  };
+
+  const openModal = () => {
+    setFormData({ filmeId: '', salaId: '', data: '', horario: '', valorIngresso: '' });
+    setModalOpen(true);
   };
 
   return (
     <div className="container py-4">
+      {loading && <div className="alert alert-info">Carregando...</div>}
+      {error && <div className="alert alert-danger">{error}</div>}
+
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Sessões</h1>
-        <Button onClick={() => setModalOpen(true)}>
+        <Button onClick={openModal}>
           <i className="bi bi-plus-lg me-2"></i>
           Nova Sessão
         </Button>
@@ -70,18 +105,18 @@ const SessoesPage = () => {
             </tr>
           </thead>
           <tbody>
-            {sessoes.map((sessao, index) => (
-              <tr key={index}>
+            {sessoes.map((sessao) => (
+              <tr key={sessao.id}>
                 <td>{sessao.filme?.titulo}</td>
-                <td>{sessao.sala?.numero}</td>
-                <td>{new Date(sessao.data).toLocaleDateString()}</td>
+                <td>Sala {sessao.sala?.numero}</td>
+                <td>{format(new Date(sessao.data), 'dd/MM/yyyy')}</td>
                 <td>{sessao.horario}</td>
                 <td>R$ {Number(sessao.valorIngresso).toFixed(2)}</td>
                 <td>
-                  <Button variant="warning" size="sm" className="me-2">
+                  <Button variant="warning" size="sm" className="me-2" onClick={() => handleEdit(sessao)}>
                     <i className="bi bi-pencil"></i>
                   </Button>
-                  <Button variant="danger" size="sm">
+                  <Button variant="danger" size="sm" onClick={() => handleDelete(sessao.id)}>
                     <i className="bi bi-trash"></i>
                   </Button>
                 </td>
@@ -91,8 +126,10 @@ const SessoesPage = () => {
         </table>
       </div>
 
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       <Modal
-        title="Nova Sessão"
+        title={formData.id ? 'Editar Sessão' : 'Nova Sessão'}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         footer={
@@ -101,7 +138,7 @@ const SessoesPage = () => {
               Cancelar
             </Button>
             <Button onClick={handleSubmit}>
-              Salvar
+              {formData.id ? 'Atualizar' : 'Salvar'}
             </Button>
           </>
         }
@@ -111,6 +148,7 @@ const SessoesPage = () => {
             <label htmlFor="filmeId" className="form-label">Filme</label>
             <select
               id="filmeId"
+              name="filmeId"
               className="form-select"
               value={formData.filmeId}
               onChange={(e) => setFormData({ ...formData, filmeId: e.target.value })}
@@ -129,6 +167,7 @@ const SessoesPage = () => {
             <label htmlFor="salaId" className="form-label">Sala</label>
             <select
               id="salaId"
+              name="salaId"
               className="form-select"
               value={formData.salaId}
               onChange={(e) => setFormData({ ...formData, salaId: e.target.value })}
@@ -146,6 +185,7 @@ const SessoesPage = () => {
           <Input
             label="Data"
             id="data"
+            name="data"
             type="date"
             value={formData.data}
             onChange={(e) => setFormData({ ...formData, data: e.target.value })}
@@ -155,6 +195,7 @@ const SessoesPage = () => {
           <Input
             label="Horário"
             id="horario"
+            name="horario"
             type="time"
             value={formData.horario}
             onChange={(e) => setFormData({ ...formData, horario: e.target.value })}
@@ -164,6 +205,7 @@ const SessoesPage = () => {
           <Input
             label="Valor do Ingresso"
             id="valorIngresso"
+            name="valorIngresso"
             type="number"
             step="0.01"
             min="0"
