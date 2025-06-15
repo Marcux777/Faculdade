@@ -1,0 +1,72 @@
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+*.swp
+.env
+.env.local
+.env.*.local
+
+# Dependências e módulos
+node_modules/
+venv/
+env/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDEs e editores
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs e databases
+*.log
+*.sqlite
+*.db
+
+# Arquivos de build e distribuição
+build/
+dist/
+out/
+target/
+
+# Arquivos temporários
+tmp/
+temp/
+.cache/
+
+# Arquivos de cobertura de testes
+coverage/
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Arquivos de documentação gerados
+docs/_build/
+site/
+
+# Arquivos de configuração local
+*.local 

@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../cinema-ts-api/node_modules/.prisma/client"
 }
 
 datasource db {
@@ -9,8 +10,8 @@ datasource db {
 
 model Filme {
   id            Int      @id @default(autoincrement())
-  titulo        String
-  duracao       Int
+  titulo        String   @unique
+  duracao       Int // Duração em minutos
   classificacao String
   genero        String
   sessoes       Sessao[]
@@ -20,29 +21,34 @@ model Sala {
   id         Int      @id @default(autoincrement())
   numero     Int      @unique
   capacidade Int
-  tipo       String // 2D, 3D, IMAX
+  descricao  String? // Ex: "Sala 3D com som Dolby Atmos"
   sessoes    Sessao[]
 }
 
 model Sessao {
   id            Int        @id @default(autoincrement())
-  data          DateTime
-  horario       String
+  dataHora      DateTime // Combina data e horário em um único campo
   valorIngresso Decimal    @db.Decimal(10, 2)
-  filme         Filme      @relation(fields: [filmeId], references: [id])
-  filmeId       Int
-  sala          Sala       @relation(fields: [salaId], references: [id])
-  salaId        Int
-  ingressos     Ingresso[]
+  
+  filme   Filme @relation(fields: [filmeId], references: [id], onDelete: Cascade)
+  filmeId Int
+  
+  sala   Sala @relation(fields: [salaId], references: [id], onDelete: Cascade)
+  salaId Int
+
+  ingressos Ingresso[]
+
+  @@unique([filmeId, salaId, dataHora]) // Garante que não haja sessões duplicadas
 }
 
 model Ingresso {
-  id           Int          @id @default(autoincrement())
-  quantidade   Int
-  tipoIngresso TipoIngresso
-  valorTotal   Decimal      @db.Decimal(10, 2)
-  sessao       Sessao       @relation(fields: [sessaoId], references: [id])
-  sessaoId     Int
+  id       Int    @id @default(autoincrement())
+  assento  String // Ex: "A1", "B5", etc.
+  
+  sessao   Sessao @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  sessaoId Int
+
+  @@unique([sessaoId, assento]) // Garante que um assento não seja vendido duas vezes para a mesma sessão
 }
 
 enum TipoIngresso {
