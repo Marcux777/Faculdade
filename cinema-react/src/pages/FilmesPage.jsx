@@ -32,8 +32,16 @@ const FilmesPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const dataToSend = {
+      ...formData,
+      duracao: parseInt(formData.duracao, 10),
+    };
+
     const action = formData.id ? updateItem : createItem;
-    const result = formData.id ? await action(formData.id, formData) : await action(formData);
+    const result = formData.id
+      ? await action(formData.id, dataToSend)
+      : await action(dataToSend);
 
     if (result.success) {
       setToast({ message: `Filme ${formData.id ? 'atualizado' : 'criado'} com sucesso!`, type: 'success' });

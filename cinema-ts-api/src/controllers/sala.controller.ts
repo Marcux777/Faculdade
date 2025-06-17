@@ -3,18 +3,21 @@ import prisma from '../lib/prisma';
 
 class SalaController {
   async create(req: Request, res: Response) {
-    const { numero, capacidade, descricao } = req.body;
+    const { numero, capacidade, tipo } = req.body;
 
-    if (numero === undefined || capacidade === undefined) {
-      return res.status(400).json({ error: 'Número e capacidade são obrigatórios.' });
+    const numeroAsNumber = Number(numero);
+    const capacidadeAsNumber = Number(capacidade);
+
+    if (isNaN(numeroAsNumber) || isNaN(capacidadeAsNumber) || !tipo) {
+      return res.status(400).json({ error: 'Número, capacidade e tipo são obrigatórios e devem ser válidos.' });
     }
 
     try {
       const sala = await prisma.sala.create({
         data: {
-          numero: Number(numero),
-          capacidade: Number(capacidade),
-          descricao,
+          numero: numeroAsNumber,
+          capacidade: capacidadeAsNumber,
+          tipo,
         },
       });
       return res.status(201).json(sala);
@@ -23,6 +26,7 @@ class SalaController {
       if (error.code === 'P2002') { // Unique constraint violation
         return res.status(409).json({ error: 'Uma sala com este número já existe.' });
       }
+      console.error('Erro não tratado ao criar sala:', error);
       return res.status(500).json({ error: 'Ocorreu um erro ao criar a sala.' });
     }
   }
@@ -55,7 +59,7 @@ class SalaController {
 
   async update(req: Request, res: Response) {
     const { id } = req.params;
-    const { numero, capacidade, descricao } = req.body;
+    const { numero, capacidade, tipo } = req.body;
 
     try {
       const sala = await prisma.sala.update({
@@ -63,7 +67,7 @@ class SalaController {
         data: {
           numero: numero ? Number(numero) : undefined,
           capacidade: capacidade ? Number(capacidade) : undefined,
-          descricao,
+          tipo,
         },
       });
       return res.status(200).json(sala);
@@ -85,4 +89,4 @@ class SalaController {
   }
 }
 
-export default new SalaController(); 
+export default new SalaController();

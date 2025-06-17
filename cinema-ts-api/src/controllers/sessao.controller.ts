@@ -3,16 +3,17 @@ import prisma from '../lib/prisma';
 
 class SessaoController {
   async create(req: Request, res: Response) {
-    const { dataHora, valorIngresso, filmeId, salaId } = req.body;
+    const { data, horario, valorIngresso, filmeId, salaId } = req.body;
 
-    if (!dataHora || valorIngresso === undefined || !filmeId || !salaId) {
+    if (!data || !horario || valorIngresso === undefined || !filmeId || !salaId) {
       return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
     }
 
     try {
       const sessao = await prisma.sessao.create({
         data: {
-          dataHora: new Date(dataHora),
+          data: new Date(data),
+          horario,
           valorIngresso,
           filmeId: Number(filmeId),
           salaId: Number(salaId),
@@ -65,13 +66,14 @@ class SessaoController {
 
   async update(req: Request, res: Response) {
     const { id } = req.params;
-    const { dataHora, valorIngresso, filmeId, salaId } = req.body;
+    const { data, horario, valorIngresso, filmeId, salaId } = req.body;
 
     try {
       const sessao = await prisma.sessao.update({
         where: { id: Number(id) },
         data: {
-          dataHora: dataHora ? new Date(dataHora) : undefined,
+          data: data ? new Date(data) : undefined,
+          horario: horario,
           valorIngresso: valorIngresso,
           filmeId: filmeId ? Number(filmeId) : undefined,
           salaId: salaId ? Number(salaId) : undefined,
@@ -96,4 +98,4 @@ class SessaoController {
   }
 }
 
-export default new SessaoController(); 
+export default new SessaoController();

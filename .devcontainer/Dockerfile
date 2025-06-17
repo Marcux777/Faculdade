@@ -1,23 +1,12 @@
-# Utiliza uma imagem oficial do Node.js (versão 16 com base no Alpine para uma imagem mais leve)
-FROM node:16-alpine
+FROM mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm
 
-# instala o Git
-RUN apk add --no-cache git
+# [Optional] Uncomment this section to install additional OS packages.
+# RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+#     && apt-get -y install --no-install-recommends <your-package-list-here>
 
-# Define o diretório de trabalho dentro do container
-WORKDIR /app
+# [Optional] Uncomment if you want to install an additional version of node using nvm
+# ARG EXTRA_NODE_VERSION=10
+# RUN su node -c "source /usr/local/share/nvm/nvm.sh && nvm install ${EXTRA_NODE_VERSION}"
 
-# Copia os arquivos de dependências para o diretório de trabalho
-COPY package*.json ./
-
-# Instala as dependências
-RUN npm install
-
-# Copia o restante dos arquivos da aplicação para o container
-COPY . .
-
-# Expõe a porta que a aplicação utilizará (por exemplo, 3000)
-EXPOSE 3000
-
-# Comando para iniciar a aplicação (ajuste conforme necessário, por exemplo, "npm start")
-CMD ["npm", "start"]
+# [Optional] Uncomment if you want to install more global node modules
+# RUN su node -c "npm install -g <your-package-list-here>"

@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../cinema-ts-api/node_modules/.prisma/client"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -21,34 +21,35 @@ model Sala {
   id         Int      @id @default(autoincrement())
   numero     Int      @unique
   capacidade Int
-  descricao  String? // Ex: "Sala 3D com som Dolby Atmos"
+  tipo       String   // Ex: "2D", "3D", "IMAX"
   sessoes    Sessao[]
 }
 
 model Sessao {
   id            Int        @id @default(autoincrement())
-  dataHora      DateTime // Combina data e horário em um único campo
+  data          DateTime   @db.Date // Apenas a data
+  horario       String     // Horário como string (ex: "14:30")
   valorIngresso Decimal    @db.Decimal(10, 2)
-  
+
   filme   Filme @relation(fields: [filmeId], references: [id], onDelete: Cascade)
   filmeId Int
-  
+
   sala   Sala @relation(fields: [salaId], references: [id], onDelete: Cascade)
   salaId Int
 
   ingressos Ingresso[]
 
-  @@unique([filmeId, salaId, dataHora]) // Garante que não haja sessões duplicadas
+  @@unique([filmeId, salaId, data, horario]) // Garante que não haja sessões duplicadas
 }
 
 model Ingresso {
-  id       Int    @id @default(autoincrement())
-  assento  String // Ex: "A1", "B5", etc.
-  
+  id           Int           @id @default(autoincrement())
+  quantidade   Int           @default(1)
+  tipoIngresso TipoIngresso  @default(INTEIRA)
+  valorTotal   Decimal       @db.Decimal(10, 2)
+
   sessao   Sessao @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
   sessaoId Int
-
-  @@unique([sessaoId, assento]) // Garante que um assento não seja vendido duas vezes para a mesma sessão
 }
 
 enum TipoIngresso {

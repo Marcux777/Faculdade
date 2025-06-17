@@ -12,7 +12,7 @@ export const useApi = (service) => {
       const response = await service.listar();
       setData(response.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao carregar dados');
+      setError(err.response?.data?.error || 'Erro ao carregar dados');
     } finally {
       setLoading(false);
     }
@@ -26,8 +26,9 @@ export const useApi = (service) => {
       await fetchData();
       return { success: true, data: response.data };
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao criar item');
-      return { success: false, error: err.response?.data?.message };
+      const errorMessage = err.response?.data?.error || 'Erro ao criar item';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
@@ -41,8 +42,9 @@ export const useApi = (service) => {
       await fetchData();
       return { success: true, data: response.data };
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao atualizar item');
-      return { success: false, error: err.response?.data?.message };
+      const errorMessage = err.response?.data?.error || 'Erro ao atualizar item';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
@@ -56,8 +58,9 @@ export const useApi = (service) => {
       await fetchData();
       return { success: true };
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao excluir item');
-      return { success: false, error: err.response?.data?.message };
+      const errorMessage = err.response?.data?.error || 'Erro ao excluir item';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }

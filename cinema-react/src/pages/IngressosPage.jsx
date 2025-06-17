@@ -36,8 +36,18 @@ const IngressosPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Garante que os IDs sejam enviados como números
+    const dataToSend = {
+      ...formData,
+      sessaoId: parseInt(formData.sessaoId, 10),
+      quantidade: parseInt(formData.quantidade, 10),
+    };
+
     const action = formData.id ? updateItem : createItem;
-    const result = formData.id ? await action(formData.id, formData) : await action(formData);
+    const result = formData.id
+      ? await action(formData.id, dataToSend)
+      : await action(dataToSend);
 
     if (result.success) {
       setToast({ message: `Ingresso ${formData.id ? 'atualizado' : 'comprado'} com sucesso!`, type: 'success' });
@@ -104,7 +114,9 @@ const IngressosPage = () => {
                 <td>{ingresso.sessao?.filme?.titulo}</td>
                 <td>Sala {ingresso.sessao?.sala?.numero}</td>
                 <td>
-                  {ingresso.sessao?.data ? format(new Date(ingresso.sessao.data), 'dd/MM/yyyy') : ''} - {ingresso.sessao?.horario}
+                  {ingresso.sessao?.data && ingresso.sessao?.horario ?
+                    `${format(new Date(ingresso.sessao.data), 'dd/MM/yyyy')} ${ingresso.sessao.horario}` :
+                    'Data inválida'}
                 </td>
                 <td>{ingresso.quantidade}</td>
                 <td>{ingresso.tipoIngresso}</td>
@@ -155,8 +167,8 @@ const IngressosPage = () => {
               <option value="">Selecione uma sessão...</option>
               {sessoes.map(sessao => (
                 <option key={sessao.id} value={sessao.id}>
-                  {sessao.filme?.titulo} - Sala {sessao.sala?.numero} -
-                  {sessao.data ? format(new Date(sessao.data), 'dd/MM/yyyy') : ''} - {sessao.horario}
+                  {sessao.filme?.titulo} - Sala {sessao.sala?.numero} - {sessao.data && sessao.horario ?
+                    `${format(new Date(sessao.data), 'dd/MM/yyyy')} ${sessao.horario}` : ''}
                 </option>
               ))}
             </select>
