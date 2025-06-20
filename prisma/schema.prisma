@@ -14,6 +14,7 @@ model Filme {
   duracao       Int // Duração em minutos
   classificacao String
   genero        String
+  poster        String? // URL ou caminho para o poster
   sessoes       Sessao[]
 }
 
@@ -21,7 +22,7 @@ model Sala {
   id         Int      @id @default(autoincrement())
   numero     Int      @unique
   capacidade Int
-  tipo       String   // Ex: "2D", "3D", "IMAX"
+  tipo       TipoSala // Ex: "2D", "3D", "IMAX"
   sessoes    Sessao[]
 }
 
@@ -55,4 +56,10 @@ model Ingresso {
 enum TipoIngresso {
   INTEIRA
   MEIA
+}
+
+enum TipoSala {
+  D2 @map("2D")
+  D3 @map("3D")
+  IMAX
 }

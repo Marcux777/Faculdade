@@ -1,12 +1,15 @@
 import { Router } from 'express';
+import multer from 'multer';
+import uploadConfig from '../config/upload';
 import FilmeController from '../controllers/filme.controller';
 
 const filmeRoutes = Router();
+const upload = multer(uploadConfig);
 
-filmeRoutes.post('/filmes', FilmeController.create);
-filmeRoutes.get('/filmes', FilmeController.findAll);
-filmeRoutes.get('/filmes/:id', FilmeController.findOne);
-filmeRoutes.put('/filmes/:id', FilmeController.update);
-filmeRoutes.delete('/filmes/:id', FilmeController.delete);
+filmeRoutes.get('/', FilmeController.listar);
+filmeRoutes.get('/:id', FilmeController.obter);
+filmeRoutes.post('/', upload.single('poster'), FilmeController.criar);
+filmeRoutes.put('/:id', upload.single('poster'), FilmeController.atualizar);
+filmeRoutes.delete('/:id', FilmeController.deletar);
 
-export default filmeRoutes; 
+export default filmeRoutes;

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Upload</title>
+</head>
+<body>
+    <h1>Teste de Upload</h1>
+    <form id="testForm">
+        <input type="text" id="titulo" placeholder="Título" required><br><br>
+        <input type="number" id="duracao" placeholder="Duração" required><br><br>
+        <input type="text" id="classificacao" placeholder="Classificação" required><br><br>
+        <input type="text" id="genero" placeholder="Gênero" required><br><br>
+        <input type="file" id="poster" accept="image/*"><br><br>
+        <button type="submit">Enviar</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('testForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData();
+            formData.append('titulo', document.getElementById('titulo').value);
+            formData.append('duracao', document.getElementById('duracao').value);
+            formData.append('classificacao', document.getElementById('classificacao').value);
+            formData.append('genero', document.getElementById('genero').value);
+
+            const posterFile = document.getElementById('poster').files[0];
+            if (posterFile) {
+                formData.append('poster', posterFile);
+            }
+
+            try {
+                const response = await fetch('/api/filmes', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                document.getElementById('result').innerHTML =
+                    '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+
+                if (!response.ok) {
+                    console.error('Erro:', result);
+                }
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                document.getElementById('result').innerHTML =
+                    '<div style="color: red;">Erro: ' + error.message + '</div>';
+            }
+        });
+    </script>
+</body>
+</html>

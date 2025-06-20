@@ -69,4 +69,17 @@ docs/_build/
 site/
 
 # Arquivos de configuração local
-*.local 
+*.local
+
+# --- Adições específicas do projeto ---
+
+# Ignorar pastas de uploads da API
+cinema-ts-api/uploads/
+
+# Ignorar logs de dependência
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignorar o diretório .cache do vite no frontend
+cinema-react/.vite/

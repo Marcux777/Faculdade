@@ -1,6 +1,17 @@
 version: '3.8'
 
 services:
+  frontend:
+    build:
+      context: ./cinema-react
+      dockerfile: Dockerfile
+    container_name: cinema-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
   api:
     image: node:18-alpine
     container_name: cinema-api
@@ -14,8 +25,14 @@ services:
       - ./cinema-ts-api:/app
       - ./prisma:/app/prisma
     command: /app/entrypoint.sh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3333/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   postgres:
     image: postgres:14-alpine
@@ -29,6 +46,11 @@ services:
       - '5433:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cinema"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

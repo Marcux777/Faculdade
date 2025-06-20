@@ -1,20 +1,28 @@
 import { useState, useEffect } from 'react';
 import Button from '../components/common/Button';
-import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
 import Toast from '../components/common/Toast';
 import { filmeService } from '../services/filmeService';
 import useApi from '../hooks/useApi';
+import FilmesTable from '../components/pages/filmes/FilmesTable';
+import FilmesCatalogo from '../components/pages/filmes/FilmesCatalogo';
+import FilmeForm from '../components/pages/filmes/FilmeForm';
+
+const emptyFilme = {
+  titulo: '',
+  duracao: '',
+  classificacao: '',
+  genero: '',
+  poster: null,
+};
 
 const FilmesPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [filmeToEdit, setFilmeToEdit] = useState(null);
+  const [filmeToDelete, setFilmeToDelete] = useState(null);
   const [toast, setToast] = useState(null);
-  const [formData, setFormData] = useState({
-    titulo: '',
-    duracao: '',
-    classificacao: '',
-    genero: ''
-  });
+  const [viewMode, setViewMode] = useState('table'); // 'table' ou 'catalog'
 
   const {
     data: filmes,
@@ -23,109 +31,106 @@ const FilmesPage = () => {
     fetchData,
     createItem,
     updateItem,
-    deleteItem
+    deleteItem,
   } = useApi(filmeService);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const resetFormState = () => {
+    setFilmeToEdit(null);
+  };
 
-    const dataToSend = {
-      ...formData,
-      duracao: parseInt(formData.duracao, 10),
-    };
+  const handleModalClose = () => {
+    setModalOpen(false);
+    resetFormState();
+  };
 
-    const action = formData.id ? updateItem : createItem;
-    const result = formData.id
-      ? await action(formData.id, dataToSend)
+  const handleSubmit = async (dataToSend, id) => {
+    const action = id ? updateItem : createItem;
+    const result = id
+      ? await action(id, dataToSend)
       : await action(dataToSend);
 
     if (result.success) {
-      setToast({ message: `Filme ${formData.id ? 'atualizado' : 'criado'} com sucesso!`, type: 'success' });
-      setModalOpen(false);
-      setFormData({ titulo: '', duracao: '', classificacao: '', genero: '' });
+      setToast({
+        message: `Filme ${id ? 'atualizado' : 'criado'} com sucesso!`,
+        type: 'success',
+      });
+      handleModalClose();
     } else {
-      setToast({ message: result.error || 'Erro ao criar filme', type: 'error' });
+      setToast({ message: result.error || 'Erro desconhecido', type: 'error' });
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Tem certeza que deseja excluir este filme?')) {
-      const result = await deleteItem(id);
-      if (result.success) {
-        setToast({ message: 'Filme excluído com sucesso!', type: 'success' });
-      } else {
-        setToast({ message: result.error || 'Erro ao excluir filme', type: 'error' });
-      }
+  const handleDelete = async () => {
+    if (!filmeToDelete) return;
+    const result = await deleteItem(filmeToDelete.id);
+
+    if (result.success) {
+      setToast({ message: 'Filme excluído com sucesso!', type: 'success' });
+    } else {
+      setToast({ message: result.error || 'Erro ao excluir filme', type: 'error' });
     }
+    setDeleteModalOpen(false);
+    setFilmeToDelete(null);
   };
 
-  const handleEdit = async (filme) => {
-    setFormData(filme);
+  const openEditModal = (filme) => {
+    setFilmeToEdit(filme);
     setModalOpen(true);
+  };
+
+  const openDeleteModal = (filme) => {
+    setFilmeToDelete(filme);
+    setDeleteModalOpen(true);
   };
 
   return (
     <div className="container py-4">
-      {loading && (
-        <div className="alert alert-info">Carregando...</div>
-      )}
-
-      {error && (
-        <div className="alert alert-danger">{error}</div>
-      )}
+      {loading && <div className="alert alert-info">Carregando...</div>}
+      {error && <div className="alert alert-danger">{error}</div>}
 
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Filmes</h1>
-        <Button onClick={() => setModalOpen(true)}>
-          <i className="bi bi-plus-lg me-2"></i>
-          Novo Filme
-        </Button>
+        <div className="d-flex gap-2">
+          {/* Toggle de visualização */}
+          <div className="btn-group" role="group">
+            <Button
+              variant={viewMode === 'table' ? 'primary' : 'outline-primary'}
+              onClick={() => setViewMode('table')}
+              title="Visualização em tabela"
+            >
+              <i className="bi bi-table"></i>
+            </Button>
+            <Button
+              variant={viewMode === 'catalog' ? 'primary' : 'outline-primary'}
+              onClick={() => setViewMode('catalog')}
+              title="Visualização em catálogo"
+            >
+              <i className="bi bi-grid-3x3-gap"></i>
+            </Button>
+          </div>
+
+          <Button onClick={() => setModalOpen(true)}>
+            <i className="bi bi-plus-lg me-2"></i>
+            Novo Filme
+          </Button>
+        </div>
       </div>
 
-      <div className="table-responsive">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Título</th>
-              <th>Duração</th>
-              <th>Classificação</th>
-              <th>Gênero</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filmes.map((filme) => (
-              <tr key={filme.id}>
-                <td>{filme.titulo}</td>
-                <td>{filme.duracao}</td>
-                <td>{filme.classificacao}</td>
-                <td>{filme.genero}</td>
-                <td>
-                  <Button
-                    variant="warning"
-                    size="sm"
-                    className="me-2"
-                    onClick={() => handleEdit(filme)}
-                  >
-                    <i className="bi bi-pencil"></i>
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDelete(filme.id)}
-                  >
-                    <i className="bi bi-trash"></i>
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Renderização condicional baseada no modo de visualização */}
+      {viewMode === 'table' ? (
+        <FilmesTable filmes={filmes} onEdit={openEditModal} onDelete={openDeleteModal} />
+      ) : (
+        <FilmesCatalogo
+          filmes={filmes}
+          showActions={true}
+          onEdit={openEditModal}
+          onDelete={openDeleteModal}
+        />
+      )}
 
       {toast && (
         <Toast
@@ -135,65 +140,39 @@ const FilmesPage = () => {
         />
       )}
 
+      {/* Delete Confirmation Modal */}
       <Modal
-        title={formData.id ? 'Editar Filme' : 'Novo Filme'}
-        isOpen={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setFormData({ titulo: '', duracao: '', classificacao: '', genero: '' });
-        }}
+        title="Confirmar Exclusão"
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
         footer={
           <>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setModalOpen(false);
-                setFormData({ titulo: '', duracao: '', classificacao: '', genero: '' });
-              }}
-            >
+            <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit}>
-              {formData.id ? 'Atualizar' : 'Salvar'}
+            <Button variant="danger" onClick={handleDelete}>
+              Excluir
             </Button>
           </>
         }
       >
-        <form onSubmit={handleSubmit}>
-          <Input
-            label="Título"
-            id="titulo"
-            name="titulo"
-            value={formData.titulo}
-            onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-            required
-          />
-          <Input
-            label="Duração (minutos)"
-            id="duracao"
-            name="duracao"
-            type="number"
-            value={formData.duracao}
-            onChange={(e) => setFormData({ ...formData, duracao: e.target.value })}
-            required
-          />
-          <Input
-            label="Classificação"
-            id="classificacao"
-            name="classificacao"
-            value={formData.classificacao}
-            onChange={(e) => setFormData({ ...formData, classificacao: e.target.value })}
-            required
-          />
-          <Input
-            label="Gênero"
-            id="genero"
-            name="genero"
-            value={formData.genero}
-            onChange={(e) => setFormData({ ...formData, genero: e.target.value })}
-            required
-          />
-        </form>
+        <p>
+          Tem certeza que deseja excluir o filme{' '}
+          <strong>{filmeToDelete?.titulo}</strong>?
+        </p>
+      </Modal>
+
+      {/* Create/Edit Modal */}
+      <Modal
+        title={filmeToEdit ? 'Editar Filme' : 'Novo Filme'}
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+      >
+        <FilmeForm
+            onSubmit={handleSubmit}
+            initialData={filmeToEdit || emptyFilme}
+            onCancel={handleModalClose}
+        />
       </Modal>
     </div>
   );

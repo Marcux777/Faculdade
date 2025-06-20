@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import Button from '../components/common/Button';
-import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
 import Toast from '../components/common/Toast';
 import { sessaoService } from '../services/sessaoService';
@@ -8,17 +7,15 @@ import { filmeService } from '../services/filmeService';
 import { salaService } from '../services/salaService';
 import useApi from '../hooks/useApi';
 import { format } from 'date-fns';
+import SessaoForm from '../components/pages/sessoes/SessaoForm';
+import SessoesTable from '../components/pages/sessoes/SessoesTable';
 
 const SessoesPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [sessaoToEdit, setSessaoToEdit] = useState(null);
+  const [sessaoToDelete, setSessaoToDelete] = useState(null);
   const [toast, setToast] = useState(null);
-  const [formData, setFormData] = useState({
-    filmeId: '',
-    salaId: '',
-    data: '',
-    horario: '',
-    valorIngresso: ''
-  });
 
   const {
     data: sessoes,
@@ -39,44 +36,50 @@ const SessoesPage = () => {
     fetchSalas();
   }, [fetchData, fetchFilmes, fetchSalas]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const action = formData.id ? updateItem : createItem;
-    const result = formData.id ? await action(formData.id, formData) : await action(formData);
+  const resetFormState = () => {
+    setSessaoToEdit(null);
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    resetFormState();
+  };
+
+  const handleSubmit = async (dataToSend, id) => {
+    const action = id ? updateItem : createItem;
+    const result = id
+      ? await action(id, dataToSend)
+      : await action(dataToSend);
 
     if (result.success) {
-      setToast({ message: `Sessão ${formData.id ? 'atualizada' : 'criada'} com sucesso!`, type: 'success' });
-      setModalOpen(false);
-      setFormData({ filmeId: '', salaId: '', data: '', horario: '', valorIngresso: '' });
+      setToast({ message: `Sessão ${id ? 'atualizada' : 'criada'} com sucesso!`, type: 'success' });
+      handleModalClose();
     } else {
       setToast({ message: result.error || 'Erro ao salvar sessão', type: 'error' });
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Tem certeza que deseja excluir esta sessão?')) {
-      const result = await deleteItem(id);
-      if (result.success) {
-        setToast({ message: 'Sessão excluída com sucesso!', type: 'success' });
-      } else {
-        setToast({ message: result.error || 'Erro ao excluir sessão', type: 'error' });
-      }
+  const handleDelete = async () => {
+    if (!sessaoToDelete) return;
+    const result = await deleteItem(sessaoToDelete.id);
+
+    if (result.success) {
+      setToast({ message: 'Sessão excluída com sucesso!', type: 'success' });
+    } else {
+      setToast({ message: result.error || 'Erro ao excluir sessão', type: 'error' });
     }
+    setDeleteModalOpen(false);
+    setSessaoToDelete(null);
   };
 
-  const handleEdit = (sessao) => {
-    setFormData({
-      ...sessao,
-      filmeId: sessao.filme.id,
-      salaId: sessao.sala.id,
-      data: format(new Date(sessao.data), 'yyyy-MM-dd')
-    });
+  const openEditModal = (sessao) => {
+    setSessaoToEdit(sessao);
     setModalOpen(true);
   };
 
-  const openModal = () => {
-    setFormData({ filmeId: '', salaId: '', data: '', horario: '', valorIngresso: '' });
-    setModalOpen(true);
+  const openDeleteModal = (sessao) => {
+    setSessaoToDelete(sessao);
+    setDeleteModalOpen(true);
   };
 
   return (
@@ -86,134 +89,52 @@ const SessoesPage = () => {
 
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Sessões</h1>
-        <Button onClick={openModal}>
+        <Button onClick={() => setModalOpen(true)}>
           <i className="bi bi-plus-lg me-2"></i>
           Nova Sessão
         </Button>
       </div>
 
-      <div className="table-responsive">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Filme</th>
-              <th>Sala</th>
-              <th>Data</th>
-              <th>Horário</th>
-              <th>Valor do Ingresso</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sessoes.map((sessao) => (
-              <tr key={sessao.id}>
-                <td>{sessao.filme?.titulo}</td>
-                <td>Sala {sessao.sala?.numero}</td>
-                <td>{format(new Date(sessao.data), 'dd/MM/yyyy')}</td>
-                <td>{sessao.horario}</td>
-                <td>R$ {Number(sessao.valorIngresso).toFixed(2)}</td>
-                <td>
-                  <Button variant="warning" size="sm" className="me-2" onClick={() => handleEdit(sessao)}>
-                    <i className="bi bi-pencil"></i>
-                  </Button>
-                  <Button variant="danger" size="sm" onClick={() => handleDelete(sessao.id)}>
-                    <i className="bi bi-trash"></i>
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <SessoesTable sessoes={sessoes} onEdit={openEditModal} onDelete={openDeleteModal} />
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
+      {/* Delete Confirmation Modal */}
       <Modal
-        title={formData.id ? 'Editar Sessão' : 'Nova Sessão'}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        title="Confirmar Exclusão"
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setModalOpen(false)}>
+            <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit}>
-              {formData.id ? 'Atualizar' : 'Salvar'}
+            <Button variant="danger" onClick={handleDelete}>
+              Excluir
             </Button>
           </>
         }
       >
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label htmlFor="filmeId" className="form-label">Filme</label>
-            <select
-              id="filmeId"
-              name="filmeId"
-              className="form-select"
-              value={formData.filmeId}
-              onChange={(e) => setFormData({ ...formData, filmeId: e.target.value })}
-              required
-            >
-              <option value="">Selecione um filme...</option>
-              {filmes.map(filme => (
-                <option key={filme.id} value={filme.id}>
-                  {filme.titulo}
-                </option>
-              ))}
-            </select>
-          </div>
+        <p>
+          Tem certeza que deseja excluir a sessão do filme{' '}
+          <strong>{sessaoToDelete?.filme?.titulo}</strong> na sala{' '}
+          <strong>{sessaoToDelete?.sala?.numero}</strong>?
+        </p>
+      </Modal>
 
-          <div className="mb-3">
-            <label htmlFor="salaId" className="form-label">Sala</label>
-            <select
-              id="salaId"
-              name="salaId"
-              className="form-select"
-              value={formData.salaId}
-              onChange={(e) => setFormData({ ...formData, salaId: e.target.value })}
-              required
-            >
-              <option value="">Selecione uma sala...</option>
-              {salas.map(sala => (
-                <option key={sala.id} value={sala.id}>
-                  Sala {sala.numero} - {sala.tipo}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <Input
-            label="Data"
-            id="data"
-            name="data"
-            type="date"
-            value={formData.data}
-            onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-            required
-          />
-
-          <Input
-            label="Horário"
-            id="horario"
-            name="horario"
-            type="time"
-            value={formData.horario}
-            onChange={(e) => setFormData({ ...formData, horario: e.target.value })}
-            required
-          />
-
-          <Input
-            label="Valor do Ingresso"
-            id="valorIngresso"
-            name="valorIngresso"
-            type="number"
-            step="0.01"
-            min="0"
-            value={formData.valorIngresso}
-            onChange={(e) => setFormData({ ...formData, valorIngresso: e.target.value })}
-            required
-          />
-        </form>
+      {/* Create/Edit Modal */}
+      <Modal
+        title={sessaoToEdit ? 'Editar Sessão' : 'Nova Sessão'}
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+      >
+        <SessaoForm
+          onSubmit={handleSubmit}
+          initialData={sessaoToEdit || {}}
+          onCancel={handleModalClose}
+          filmes={filmes}
+          salas={salas}
+        />
       </Modal>
     </div>
   );

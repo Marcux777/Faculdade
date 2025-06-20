@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react';
 import Button from '../components/common/Button';
-import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
 import Toast from '../components/common/Toast';
 import { salaService } from '../services/salaService';
 import useApi from '../hooks/useApi';
+import SalaForm from '../components/pages/salas/SalaForm';
+import SalasTable from '../components/pages/salas/SalasTable';
 
 const SalasPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [salaToEdit, setSalaToEdit] = useState(null);
+  const [salaToDelete, setSalaToDelete] = useState(null);
   const [toast, setToast] = useState(null);
-  const [formData, setFormData] = useState({
-    numero: '',
-    capacidade: '',
-    tipo: ''
-  });
 
   const {
     data: salas,
@@ -29,43 +28,50 @@ const SalasPage = () => {
     fetchData();
   }, [fetchData]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const resetFormState = () => {
+    setSalaToEdit(null);
+  };
 
-    const dataToSend = {
-      ...formData,
-      numero: parseInt(formData.numero, 10),
-      capacidade: parseInt(formData.capacidade, 10),
-    };
+  const handleModalClose = () => {
+    setModalOpen(false);
+    resetFormState();
+  };
 
-    const action = formData.id ? updateItem : createItem;
-    const result = formData.id
-      ? await action(formData.id, dataToSend)
+  const handleSubmit = async (dataToSend, id) => {
+    const action = id ? updateItem : createItem;
+    const result = id
+      ? await action(id, dataToSend)
       : await action(dataToSend);
 
     if (result.success) {
-      setToast({ message: `Sala ${formData.id ? 'atualizada' : 'criada'} com sucesso!`, type: 'success' });
-      setModalOpen(false);
-      setFormData({ numero: '', capacidade: '', tipo: '' });
+      setToast({ message: `Sala ${id ? 'atualizada' : 'criada'} com sucesso!`, type: 'success' });
+      handleModalClose();
     } else {
       setToast({ message: result.error || 'Erro ao salvar sala', type: 'error' });
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Tem certeza que deseja excluir esta sala?')) {
-      const result = await deleteItem(id);
-      if (result.success) {
-        setToast({ message: 'Sala excluída com sucesso!', type: 'success' });
-      } else {
-        setToast({ message: result.error || 'Erro ao excluir sala', type: 'error' });
-      }
+  const handleDelete = async () => {
+    if (!salaToDelete) return;
+
+    const result = await deleteItem(salaToDelete.id);
+    if (result.success) {
+      setToast({ message: 'Sala excluída com sucesso!', type: 'success' });
+    } else {
+      setToast({ message: result.error || 'Erro ao excluir sala', type: 'error' });
     }
+    setDeleteModalOpen(false);
+    setSalaToDelete(null);
   };
 
-  const handleEdit = (sala) => {
-    setFormData(sala);
+  const openEditModal = (sala) => {
+    setSalaToEdit(sala);
     setModalOpen(true);
+  };
+
+  const openDeleteModal = (sala) => {
+    setSalaToDelete(sala);
+    setDeleteModalOpen(true);
   };
 
   return (
@@ -81,107 +87,42 @@ const SalasPage = () => {
         </Button>
       </div>
 
-      <div className="table-responsive">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Número</th>
-              <th>Capacidade</th>
-              <th>Tipo</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {salas.map((sala) => (
-              <tr key={sala.id}>
-                <td>{sala.numero}</td>
-                <td>{sala.capacidade}</td>
-                <td>{sala.tipo}</td>
-                <td>
-                  <Button
-                    variant="warning"
-                    size="sm"
-                    className="me-2"
-                    onClick={() => handleEdit(sala)}
-                  >
-                    <i className="bi bi-pencil"></i>
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDelete(sala.id)}
-                  >
-                    <i className="bi bi-trash"></i>
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <SalasTable salas={salas} onEdit={openEditModal} onDelete={openDeleteModal} />
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
+      {/* Delete Confirmation Modal */}
       <Modal
-        title={formData.id ? 'Editar Sala' : 'Nova Sala'}
-        isOpen={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setFormData({ numero: '', capacidade: '', tipo: '' });
-        }}
+        title="Confirmar Exclusão"
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
         footer={
           <>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setModalOpen(false);
-                setFormData({ numero: '', capacidade: '', tipo: '' });
-              }}
-            >
+            <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit}>
-              {formData.id ? 'Atualizar' : 'Salvar'}
+            <Button variant="danger" onClick={handleDelete}>
+              Excluir
             </Button>
           </>
         }
       >
-        <form onSubmit={handleSubmit}>
-          <Input
-            label="Número"
-            id="numero"
-            name="numero"
-            type="number"
-            value={formData.numero}
-            onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
-            required
-          />
-          <Input
-            label="Capacidade"
-            id="capacidade"
-            name="capacidade"
-            type="number"
-            value={formData.capacidade}
-            onChange={(e) => setFormData({ ...formData, capacidade: e.target.value })}
-            required
-          />
-          <div className="mb-3">
-            <label htmlFor="tipo" className="form-label">Tipo</label>
-            <select
-              id="tipo"
-              name="tipo"
-              className="form-select"
-              value={formData.tipo}
-              onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-              required
-            >
-              <option value="">Selecione...</option>
-              <option value="2D">2D</option>
-              <option value="3D">3D</option>
-              <option value="IMAX">IMAX</option>
-            </select>
-          </div>
-        </form>
+        <p>
+            Tem certeza que deseja excluir a sala <strong>{salaToDelete?.numero}</strong>?
+        </p>
+      </Modal>
+
+      {/* Create/Edit Modal */}
+      <Modal
+        title={salaToEdit ? 'Editar Sala' : 'Nova Sala'}
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+      >
+        <SalaForm
+            onSubmit={handleSubmit}
+            initialData={salaToEdit || {}}
+            onCancel={handleModalClose}
+        />
       </Modal>
     </div>
   );

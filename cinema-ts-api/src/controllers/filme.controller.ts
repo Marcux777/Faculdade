@@ -1,87 +1,68 @@
 import { Request, Response } from 'express';
-import prisma from '../lib/prisma';
+import { z } from 'zod';
+import FilmeService from '../services/filme.service';
+
+const baseSchema = {
+  titulo: z.string().min(1, 'O título é obrigatório.'),
+  classificacao: z.string().min(1, 'A classificação é obrigatória.'),
+  genero: z.string().min(1, 'O gênero é obrigatório.'),
+  duracao: z.preprocess(
+    (val) => (val ? Number(val) : undefined),
+    z.number({ invalid_type_error: 'A duração deve ser um número.' })
+      .int('A duração deve ser um número inteiro.')
+      .positive('A duração deve ser um número positivo.')
+  ),
+};
+
+const filmeCreateSchema = z.object(baseSchema);
+
+const filmeUpdateSchema = z.object(baseSchema).partial();
 
 class FilmeController {
-  async create(req: Request, res: Response) {
-    const { titulo, duracao, classificacao, genero } = req.body;
+  async criar(req: Request, res: Response) {
+    const { titulo, duracao, classificacao, genero } = filmeCreateSchema.parse(
+      req.body
+    );
+    const poster = req.file?.filename;
 
-    if (!titulo || !duracao || !classificacao || !genero) {
-      return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
-    }
-
-    try {
-      const filme = await prisma.filme.create({
-        data: {
-          titulo,
-          duracao,
-          classificacao,
-          genero,
-        },
-      });
-      return res.status(201).json(filme);
-    } catch (error) {
-      return res.status(500).json({ error: 'Ocorreu um erro ao criar o filme.' });
-    }
+    const filme = await FilmeService.create({
+      titulo,
+      duracao,
+      classificacao,
+      genero,
+      poster,
+    });
+    return res.status(201).json(filme);
   }
 
-  async findAll(req: Request, res: Response) {
-    try {
-      const filmes = await prisma.filme.findMany();
-      return res.status(200).json(filmes);
-    } catch (error) {
-      console.error('STACK /api/filmes =>', error);
-      return res.status(500).json({ error: 'Ocorreu um erro ao buscar os filmes.' });
-    }
+  async listar(req: Request, res: Response) {
+    const filmes = await FilmeService.getAll();
+    return res.status(200).json(filmes);
   }
 
-  async findOne(req: Request, res: Response) {
+  async obter(req: Request, res: Response) {
     const { id } = req.params;
-    try {
-      const filme = await prisma.filme.findUnique({
-        where: { id: Number(id) },
-      });
-
-      if (!filme) {
-        return res.status(404).json({ error: 'Filme não encontrado.' });
-      }
-
-      return res.status(200).json(filme);
-    } catch (error) {
-      return res.status(500).json({ error: 'Ocorreu um erro ao buscar o filme.' });
-    }
+    const filme = await FilmeService.getById(Number(id));
+    return res.status(200).json(filme);
   }
 
-  async update(req: Request, res: Response) {
+  async atualizar(req: Request, res: Response) {
     const { id } = req.params;
-    const { titulo, duracao, classificacao, genero } = req.body;
+    const data = filmeUpdateSchema.parse(req.body);
+    const poster = req.file?.filename;
 
-    try {
-      const filme = await prisma.filme.update({
-        where: { id: Number(id) },
-        data: {
-          titulo,
-          duracao,
-          classificacao,
-          genero,
-        },
-      });
-      return res.status(200).json(filme);
-    } catch (error) {
-      return res.status(404).json({ error: 'Filme não encontrado ou erro ao atualizar.' });
-    }
+    const filme = await FilmeService.update(Number(id), {
+      ...data,
+      poster,
+    });
+    return res.status(200).json(filme);
   }
 
-  async delete(req: Request, res: Response) {
+  async deletar(req: Request, res: Response) {
     const { id } = req.params;
-    try {
-      await prisma.filme.delete({
-        where: { id: Number(id) },
-      });
-      return res.status(204).send(); // 204 No Content
-    } catch (error) {
-      return res.status(404).json({ error: 'Filme não encontrado ou erro ao deletar.' });
-    }
+    await FilmeService.delete(Number(id));
+    return res.status(204).send();
   }
 }
 
-export default new FilmeController(); 
+export default new FilmeController();
